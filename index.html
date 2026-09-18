@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Captura de Escuelas – Educación Inicial</title>
+<style>
+:root{--prim:#0f766e;--prim2:#115e59;--bg:#f1f5f9;--txt:#0f172a;--danger:#b91c1c;--ok:#15803d}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--txt)}
+.hidden{display:none!important}
+.view{max-width:1150px;margin:0 auto;padding:24px 16px}
+.card{background:#fff;border-radius:14px;box-shadow:0 2px 10px rgba(2,6,23,.08);padding:22px;margin-bottom:18px}
+h1,h2,h3{color:var(--prim2)}
+.login-wrap{display:flex;align-items:center;justify-content:center;min-height:100vh;background:linear-gradient(135deg,#134e4a,#0f766e)}
+.login-card{width:100%;max-width:400px}
+.input,select,textarea{width:100%;padding:10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:15px;background:#fff}
+.input:focus,select:focus,textarea:focus{outline:2px solid var(--prim);border-color:transparent}
+label{font-size:13px;font-weight:600;display:block;margin:10px 0 4px;color:#334155}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.grow{flex:1}
+.btn{background:#e2e8f0;border:none;padding:10px 16px;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer}
+.btn:hover{filter:brightness(.95)}
+.btn.primary{background:var(--prim);color:#fff}
+.btn:disabled{opacity:.6;cursor:wait}
+.topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;gap:10px;flex-wrap:wrap}
+.badge{display:inline-block;padding:4px 10px;border-radius:999px;font-size:13px;font-weight:700;background:#dcfce7;color:var(--ok)}
+.banner{background:#fef9c3;border:1px solid #fde047;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:14px}
+.msg{margin-top:10px;font-size:14px;min-height:18px}
+.msg.err{color:var(--danger)} .msg.okc{color:var(--ok)}
+fieldset{border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px 18px;margin-bottom:16px}
+legend{font-weight:700;font-size:14px;color:var(--prim2);padding:0 6px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+@media(max-width:640px){.grid{grid-template-columns:1fr}}
+.table-wrap{overflow:auto;max-height:560px;border:1px solid #e2e8f0;border-radius:10px}
+table{border-collapse:collapse;width:100%;font-size:13px;min-width:1500px}
+th{position:sticky;top:0;background:var(--prim);color:#fff;padding:8px 10px;text-align:left;white-space:nowrap;z-index:1}
+td{padding:8px 10px;border-top:1px solid #e2e8f0;vertical-align:top}
+tr:nth-child(even) td{background:#f8fafc}
+.dl{display:grid;grid-template-columns:170px 1fr;gap:6px 12px;margin:14px 0;font-size:15px}
+.dl dt{font-weight:700;color:#334155}
+.sub{color:#64748b;font-size:13px}
+.divider{height:1px;background:#e2e8f0;margin:16px 0}
+a{color:var(--prim)}
+.pass-wrap{position:relative}
+.pass-wrap .input{padding-right:44px}
+.eye{position:absolute;right:6px;top:50%;transform:translateY(-50%);background:none;border:none;font-size:18px;cursor:pointer}
+.archivo-item{display:flex;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #f1f5f9;font-size:14px}
+</style>
+</head>
+<body>
+
+<!-- ============ LOGIN ============ -->
+<section id="view-login" class="login-wrap">
+  <div class="card login-card">
+    <h1>🎓 Educación Inicial</h1>
+    <p class="sub" style="margin:4px 0 16px">Sistema de captura de datos de escuelas (CAI)</p>
+    <form id="login-form">
+      <label>Usuario</label>
+      <input id="login-user" class="input" autocomplete="username" required>
+      <label>Contraseña</label>
+      <div class="pass-wrap">
+        <input id="login-pass" class="input" type="password" autocomplete="current-password" required>
+        <button type="button" class="eye" onclick="togglePass()" title="Mostrar/Ocultar">👁</button>
+      </div>
+      <button class="btn primary" style="width:100%;margin-top:16px" id="btn-login">Iniciar sesión</button>
+      <div id="login-error" class="msg err"></div>
+    </form>
+  </div>
+</section>
+
+<!-- ============ PANEL ESCUELA ============ -->
+<section id="view-escuela" class="view hidden">
+  <header class="topbar">
+    <div><h2>Captura de datos – Escuela</h2><span id="esc-user" class="sub"></span></div>
+    <button class="btn" onclick="logout()">Cerrar sesión</button>
+  </header>
+
+  <div class="card">
+    <h3>1. Busca la clave de tu escuela (CCT)</h3>
+    <div class="row" style="margin-top:10px">
+      <input id="busca-clave" class="input grow" placeholder="Ej. 31PDI0004E" style="text-transform:uppercase" maxlength="10" oninput="this.value=this.value.toUpperCase().replace(/[^A-Z0-9]/g,'')">
+      <button class="btn primary" onclick="buscarCCT()">Buscar</button>
+    </div>
+    <div id="busca-msg" class="msg"></div>
+  </div>
+
+  <!-- Ya capturada: vista limitada -->
+  <div id="esc-capturada" class="card hidden">
+    <span class="badge">✓ Información ya capturada</span> <span id="cap-fecha" class="sub"></span>
+    <dl class="dl">
+      <dt>Clave (CCT)</dt><dd id="cap-clave"></dd>
+      <dt>Nombre del CAI</dt><dd id="cap-nombre"></dd>
+      <dt>Turno</dt><dd id="cap-turno"></dd>
+      <dt>Dirección</dt><dd id="cap-ubicacion"></dd>
+    </dl>
+    <p class="sub">Por seguridad, los teléfonos y correos solo son visibles para la encargada. Si necesitas corregir algo, contacta a la encargada de inicial.</p>
+    <div class="divider"></div>
+    <h3>Actualizar acuerdo (PDF)</h3>
+    <div class="row" style="margin-top:8px">
+      <input type="file" id="cap-pdf" class="input grow" accept="application/pdf,.pdf">
+      <button class="btn" onclick="subirPdfCapturada()">Subir PDF</button>
+    </div>
+    <div id="cap-msg" class="msg"></div>
+  </div>
+
+  <!-- Formulario de captura -->
+  <form id="esc-form" class="card hidden" onsubmit="guardarForm(event)">
+    <h3 id="form-titulo">2. Captura la información</h3>
+    <div id="form-banner" class="banner hidden"></div>
+
+    <fieldset><legend>Datos de la escuela</legend>
+      <div class="grid">
+        <div><label>Clave / CCT *</label><input id="f-clave" class="input" required style="text-transform:uppercase" maxlength="10" oninput="validarCCT(this)" placeholder="31PDI0004E">
+        <div id="cct-hint" class="msg"></div></div>
+        <div><label>Nombre del CAI *</label><input id="f-nombre" class="input" required></div>
+        <div><label>Turno</label>
+          <select id="f-turno" class="input">
+            <option value="">— Seleccione —</option>
+            <option>MATUTINO</option><option>VESPERTINO</option><option>MATUTINO Y VESPERTINO</option>
+          </select></div>
+        <div><label>Dirección</label><textarea id="f-ubicacion" class="input" rows="2"></textarea></div>
+      </div>
+    </fieldset>
+
+    <fieldset><legend>Representante legal o titular del acuerdo</legend>
+      <label>Nombre completo *</label>
+      <input id="f-replegal" class="input" required>
+    </fieldset>
+
+    <fieldset><legend>Contacto de la escuela</legend>
+      <div class="grid">
+        <div><label>Teléfono de la escuela * (9991-00-00-00)</label>
+          <input id="f-telescuela" class="input" placeholder="9991-00-00-00" oninput="maskTel(this)" required></div>
+        <div><label>Correo de la escuela *</label>
+          <input id="f-correoescuela" class="input" type="email" placeholder="escuela@correo.com" required></div>
+      </div>
+    </fieldset>
+
+    <fieldset><legend>Directora Pedagógica</legend>
+      <div class="grid">
+        <div><label>Nombre *</label><input id="f-nompedag" class="input" required></div>
+        <div><label>Teléfono * (9991-00-00-00)</label>
+          <input id="f-telpedag" class="input" placeholder="9991-00-00-00" oninput="maskTel(this)" required></div>
+        <div style="grid-column:1/-1"><label>Correo *</label>
+          <input id="f-correopedag" class="input" type="email" required></div>
+      </div>
+    </fieldset>
+
+    <fieldset><legend>Directora Administrativa</legend>
+      <div class="grid">
+        <div><label>Nombre</label><input id="f-nomadmin" class="input"></div>
+        <div><label>Teléfono (9991-00-00-00)</label>
+          <input id="f-teladmin" class="input" placeholder="9991-00-00-00" oninput="maskTel(this)"></div>
+        <div style="grid-column:1/-1"><label>Correo</label>
+          <input id="f-correoadmin" class="input" type="email"></div>
+      </div>
+    </fieldset>
+
+    <fieldset><legend>Acuerdo</legend>
+      <div class="grid">
+        <div><label>Persona Moral o Física *</label>
+          <select id="f-persona" class="input" required>
+            <option value="">— Seleccione —</option>
+            <option>PERSONA MORAL</option><option>PERSONA FÍSICA</option>
+          </select></div>
+        <div><label>Número de acuerdo *</label><input id="f-numacuerdo" class="input" required></div>
+        <div style="grid-column:1/-1"><label>Acuerdo en PDF *</label>
+          <input type="file" id="f-pdf" class="input" accept="application/pdf,.pdf"></div>
+      </div>
+    </fieldset>
+
+    <button class="btn primary" id="btn-guardar">Guardar información</button>
+    <div id="form-msg" class="msg"></div>
+  </form>
+</section>
+
+<!-- ============ PANEL ENCARGADA ============ -->
+<section id="view-encargada" class="view hidden">
+  <header class="topbar">
+    <div><h2>Panel de la Encargada de Inicial</h2><span id="enc-user" class="sub"></span></div>
+    <button class="btn" onclick="logout()">Cerrar sesión</button>
+  </header>
+
+  <div class="card">
+    <div class="row">
+      <h3 class="grow">Registros capturados</h3>
+      <button class="btn" onclick="cargarEncargada()">🔄 Actualizar</button>
+      <button class="btn primary" onclick="descargarExcel()">⬇ Descargar Excel</button>
+    </div>
+    <div style="margin:12px 0"><input id="filtro" class="input" placeholder="🔍 Buscar en la tabla…" oninput="aplicarFiltro()" style="max-width:340px"></div>
+    <div id="tabla-wrap" class="table-wrap"><p style="padding:14px" class="sub">Cargando…</p></div>
+    <div id="enc-msg" class="msg"></div>
+  </div>
+
+  <div class="card">
+    <div class="row">
+      <h3 class="grow">Acuerdos PDF (carpeta ACUERDOS-INICIAL)</h3>
+      <button class="btn" onclick="cargarArchivos()">🔄 Actualizar</button>
+    </div>
+    <div id="archivos-list" style="margin-top:10px"><p class="sub">Cargando…</p></div>
+  </div>
+</section>
+
+<script>
+/* ⚠️ PEGA AQUÍ LA URL DE TU APP WEB (termina en /exec) */
+const API_URL = 'https://script.google.com/macros/s/AKfycbwTYbs6qHsv86hFT0-c5wq7mhQb3r8dwbhm26GO1nIfsC_nuztTT4SthClC4dm-9j_y/exec';
+
+const HEADERS = ['CLAVE','NOMBRE DEL CAI','TURNO','UBICACIÓN','REPRESENTANTE LEGAL','TEL. ESCUELA','CORREO ESCUELA','DIR. PEDAGÓGICA','TEL. PEDAGÓGICA','CORREO PEDAGÓGICA','DIR. ADMINISTRATIVA','TEL. ADMINISTRATIVA','CORREO ADMINISTRATIVA','PERSONA MORAL/FÍSICA','NÚM. ACUERDO','PDF','FECHA CAPTURA'];
+let estado = null, filasCache = [];
+const RE_CCT = /^31[A-Z]{3}\d{4}[A-Z]$/; // 31 + 3 letras + 4 números + 1 letra
+const $ = id => document.getElementById(id);
+const val = id => $(id).value.trim();
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const sesion = () => JSON.parse(sessionStorage.getItem('sesion') || 'null');
+const msg = (id, txt, cls) => { const e = $(id); e.textContent = txt || ''; e.className = 'msg ' + (cls || ''); };
+
+async function api(action, payload = {}) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(Object.assign({ action }, payload))
+  });
+  return res.json();
+}
+
+/* ---------- Sesión ---------- */
+function togglePass(){ const i = $('login-pass'); i.type = i.type === 'password' ? 'text' : 'password'; }
+
+ $('login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  $('btn-login').disabled = true;
+  msg('login-error', 'Verificando…');
+  try {
+    const r = await api('login', { usuario: val('login-user'), contrasena: $('login-pass').value });
+    if (r.ok) { sessionStorage.setItem('sesion', JSON.stringify({ role: r.role, usuario: val('login-user') })); entrar(r.role); }
+    else msg('login-error', r.msg, 'err');
+  } catch (err) { msg('login-error', 'No se pudo conectar con el servidor. Revisa la URL del backend.', 'err'); }
+  $('btn-login').disabled = false;
+});
+
+function entrar(role) {
+  $('view-login').classList.add('hidden');
+  if (role === 'escuela') {
+    $('view-escuela').classList.remove('hidden');
+    $('esc-user').textContent = 'Sesión: ' + sesion().usuario;
+  } else {
+    $('view-encargada').classList.remove('hidden');
+    $('enc-user').textContent = 'Sesión: ' + sesion().usuario;
+    cargarEncargada();
+  }
+}
+function logout(){ sessionStorage.removeItem('sesion'); location.reload(); }
+
+/* ---------- Escuela ---------- */
+function maskTel(input) {
+  const d = input.value.replace(/\D/g, '').slice(0, 10);
+  let out = d;
+  if (d.length > 8)      out = `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6,8)}-${d.slice(8)}`;
+  else if (d.length > 6) out = `${d.slice(0,4)}-${d.slice(4,6)}-${d.slice(6)}`;
+  else if (d.length > 4) out = `${d.slice(0,4)}-${d.slice(4)}`;
+  input.value = out;
+}
+
+function validarCCT(input) {
+  input.value = input.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+  const v = input.value, hint = $('cct-hint');
+  if (!v) { hint.textContent = ''; hint.className = 'msg'; return; }
+  if (RE_CCT.test(v)) { hint.textContent = '✓ Clave con formato válido'; hint.className = 'msg okc'; }
+  else { hint.textContent = '✗ Formato: 31 + 3 letras + 4 números + 1 letra. Ej. 31PDI0004E'; hint.className = 'msg err'; }
+}
+
+
+async function buscarCCT() {
+  let clave = val('busca-clave').toUpperCase().replace(/[^A-Z0-9]/g, '');
+  $('busca-clave').value = clave;
+  if (!clave) return msg('busca-msg', 'Escribe una clave (CCT).', 'err');
+  if (!RE_CCT.test(clave))
+    return msg('busca-msg', 'Clave inválida. Formato: 31 + 3 letras + 4 números + 1 letra final. Ej. 31PDI0004E', 'err');
+  msg('busca-msg', 'Buscando…');
+  const r = await api('buscar', { clave, role: sesion().role });
+  if (!r.ok) return msg('busca-msg', r.msg, 'err');
+  msg('busca-msg', '');
+  $('esc-capturada').classList.add('hidden');
+  $('esc-form').classList.add('hidden');
+  $('esc-form').reset();
+  $('cct-hint').textContent = '';
+  estado = r;
+  if (r.existe && r.capturado) {
+    $('cap-clave').textContent = r.clave; $('cap-nombre').textContent = r.nombre;
+    $('cap-turno').textContent = r.turno; $('cap-ubicacion').textContent = r.ubicacion;
+    $('cap-fecha').textContent = r.fecha ? ('· ' + r.fecha) : '';
+    $('esc-capturada').classList.remove('hidden');
+  } else {
+    if (r.existe) {
+      $('f-clave').value = r.clave; $('f-clave').readOnly = true;
+      $('f-nombre').value = r.nombre; $('f-ubicacion').value = r.ubicacion;
+      setSelect('f-turno', r.turno);
+      $('form-titulo').textContent = '2. Verifica y completa la información';
+      const b = $('form-banner'); b.classList.remove('hidden');
+      b.textContent = 'Encontramos tu escuela: "' + r.nombre + '". Verifica que los datos sean correctos y captura los que faltan.';
+    } else {
+      $('f-clave').value = clave; $('f-clave').readOnly = false;
+      validarCCT($('f-clave'));
+      $('form-titulo').textContent = '2. Captura la información de la escuela';
+      $('form-banner').classList.add('hidden');
+    }
+    $('esc-form').classList.remove('hidden');
+  }
+}
+
+function setSelect(id, v) {
+  const sel = $(id);
+  if (v && ![...sel.options].some(o => o.value === v)) { const o = document.createElement('option'); o.textContent = v; sel.add(o); }
+  sel.value = v || '';
+}
+
+function leerPdf(inputId) {
+  return new Promise((resolve, reject) => {
+    const f = $(inputId).files[0];
+    if (!f) return resolve(null);
+    if (f.type !== 'application/pdf' || !/\.pdf$/i.test(f.name)) return reject('El archivo debe ser un PDF.');
+    if (f.size > 10 * 1024 * 1024) return reject('El PDF no debe superar 10 MB.');
+    const r = new FileReader();
+    r.onload = () => resolve(r.result.split(',')[1]);
+    r.onerror = () => reject('No se pudo leer el archivo.');
+    r.readAsDataURL(f);
+  });
+}
+
+async function guardarForm(ev) {
+  ev.preventDefault();
+  if (!RE_CCT.test(val('f-clave')))
+  return msg('form-msg', 'La clave (CCT) no tiene un formato válido: 31 + 3 letras + 4 números + 1 letra. Ej. 31PDI0004E', 'err');
+  const mailOk = v => v === '' || /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v);
+  const tels = [val('f-telescuela'), val('f-telpedag'), val('f-teladmin')];
+  const mails = [val('f-correoescuela'), val('f-correopedag'), val('f-correoadmin')];
+  if (tels.some(t => t && !/^\d{4}-\d{2}-\d{2}-\d{2}$/.test(t)))
+    return msg('form-msg', 'Los teléfonos deben tener 10 dígitos con formato 9991-00-00-00.', 'err');
+  if (!mails.every(mailOk))
+    return msg('form-msg', 'Hay un correo inválido. Revísalo.', 'err');
+
+  let pdf;
+  try { pdf = await leerPdf('f-pdf'); } catch (e) { return msg('form-msg', e, 'err'); }
+  if (!pdf) return msg('form-msg', 'Debes adjuntar el PDF del acuerdo.', 'err');
+
+  $('btn-guardar').disabled = true;
+  msg('form-msg', 'Guardando… (puede tardar si el PDF es grande)');
+  try {
+    const r = await api('guardar', {
+      role: sesion().role, usuario: sesion().usuario,
+      clave: val('f-clave'), nombre: val('f-nombre'), turno: val('f-turno'), ubicacion: val('f-ubicacion'),
+      repLegal: val('f-replegal'), telEscuela: val('f-telescuela'), correoEscuela: val('f-correoescuela'),
+      nomPedagogica: val('f-nompedag'), telPedagogica: val('f-telpedag'), correoPedagogica: val('f-correopedag'),
+      nomAdministrativa: val('f-nomadmin'), telAdministrativa: val('f-teladmin'), correoAdministrativa: val('f-correoadmin'),
+      personaMoral: val('f-persona'), numAcuerdo: val('f-numacuerdo'), pdfBase64: pdf
+    });
+    if (r.ok) { msg('form-msg', r.msg, 'okc'); await buscarCCT(); }
+    else msg('form-msg', r.msg, 'err');
+  } catch (e) { msg('form-msg', 'Error de conexión con el servidor.', 'err'); }
+  $('btn-guardar').disabled = false;
+}
+
+async function subirPdfCapturada() {
+  let b64;
+  try { b64 = await leerPdf('cap-pdf'); } catch (e) { return msg('cap-msg', e, 'err'); }
+  if (!b64) return msg('cap-msg', 'Selecciona un archivo PDF.', 'err');
+  msg('cap-msg', 'Subiendo…');
+  try {
+    const r = await api('guardar', { role: sesion().role, usuario: sesion().usuario,
+      clave: estado.clave, modo: 'soloPdf', pdfBase64: b64 });
+    msg('cap-msg', r.msg, r.ok ? 'okc' : 'err');
+  } catch (e) { msg('cap-msg', 'Error de conexión.', 'err'); }
+}
+
+/* ---------- Encargada ---------- */
+async function cargarEncargada(){ cargarRegistros(); cargarArchivos(); }
+
+async function cargarRegistros() {
+  $('tabla-wrap').innerHTML = '<p style="padding:14px" class="sub">Cargando…</p>';
+  const r = await api('registros', { role: sesion().role, usuario: sesion().usuario });
+  if (!r.ok) { $('tabla-wrap').innerHTML = ''; return msg('enc-msg', r.msg, 'err'); }
+  filasCache = r.filas; aplicarFiltro();
+}
+
+function aplicarFiltro() {
+  const q = $('filtro').value.toLowerCase();
+  const filas = filasCache.filter(f => Object.values(f).some(v => String(v || '').toLowerCase().includes(q)));
+  if (!filas.length) { $('tabla-wrap').innerHTML = '<p style="padding:14px" class="sub">Sin registros.</p>'; return; }
+  let html = '<table><thead><tr>' + HEADERS.map(h => `<th>${esc(h)}</th>`).join('') + '</tr></thead><tbody>';
+  filas.forEach(f => {
+    const celdas = [f.clave, f.nombre, f.turno, f.ubicacion, f.repLegal, f.telEscuela, f.correoEscuela,
+      f.nomPedagogica, f.telPedagogica, f.correoPedagogica, f.nomAdministrativa, f.telAdministrativa,
+      f.correoAdministrativa, f.personaMoral, f.numAcuerdo, '', f.fecha]
+      .map(v => `<td>${esc(v)}</td>`);
+    if (f.pdfUrl) celdas[15] = `<td><a href="${esc(f.pdfUrl)}" target="_blank">Ver PDF</a></td>`;
+    html += '<tr>' + celdas.join('') + '</tr>';
+  });
+  $('tabla-wrap').innerHTML = html + '</tbody></table>';
+}
+
+async function cargarArchivos() {
+  $('archivos-list').innerHTML = '<p class="sub">Cargando…</p>';
+  const r = await api('archivos', { role: sesion().role, usuario: sesion().usuario });
+  if (!r.ok) { $('archivos-list').innerHTML = ''; return msg('enc-msg', r.msg, 'err'); }
+  $('archivos-list').innerHTML = r.archivos.length
+    ? r.archivos.map(a => `<div class="archivo-item"><a href="${esc(a.url)}" target="_blank">📄 ${esc(a.nombre)}</a><span class="sub">${esc(a.fecha)}</span></div>`).join('')
+    : '<p class="sub">Aún no hay archivos en la carpeta.</p>';
+}
+
+async function descargarExcel() {
+  msg('enc-msg', 'Generando Excel…');
+  try {
+    const r = await api('excel', { role: sesion().role, usuario: sesion().usuario });
+    if (r.ok) { msg('enc-msg', ''); window.open(r.url, '_blank'); }
+    else msg('enc-msg', r.msg, 'err');
+  } catch (e) { msg('enc-msg', 'Error de conexión.', 'err'); }
+}
+
+/* ---------- Inicio ---------- */
+window.addEventListener('load', () => {
+  const s = sesion();
+  if (s) entrar(s.role);
+});
+document.getElementById('busca-clave').addEventListener('keydown', e => { if (e.key === 'Enter') buscarCCT(); });
+</script>
+</body>
+</html>
