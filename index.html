@@ -164,8 +164,8 @@ a{color:var(--prim)}
             <option value="">— Seleccione —</option>
             <option>PERSONA MORAL</option><option>PERSONA FÍSICA</option>
           </select></div>
-        <div><label>Número de acuerdo *</label><input id="f-numacuerdo" class="input" required></div>
-        <div style="grid-column:1/-1"><label>Acuerdo en PDF *</label>
+        <div><label>Número de acuerdo (opcional)</label><input id="f-numacuerdo" class="input"></div>
+        <div style="grid-column:1/-1"><label>Acuerdo en PDF (opcional)</label>
           <input type="file" id="f-pdf" class="input" accept="application/pdf,.pdf"></div>
       </div>
     </fieldset>
@@ -342,7 +342,7 @@ async function guardarForm(ev) {
 
   let pdf;
   try { pdf = await leerPdf('f-pdf'); } catch (e) { return msg('form-msg', e, 'err'); }
-  if (!pdf) return msg('form-msg', 'Debes adjuntar el PDF del acuerdo.', 'err');
+  //if (!pdf) return msg('form-msg', 'Debes adjuntar el PDF del acuerdo.', 'err');
 
   $('btn-guardar').disabled = true;
   msg('form-msg', 'Guardando… (puede tardar si el PDF es grande)');
